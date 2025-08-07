@@ -16,46 +16,117 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.Laborex.Application.Dao.DuckDBConnection;
-import com.Laborex.Application.KPI.DTO.CaClientDTO;
+import com.Laborex.Application.KPI.DTO.CaVenteDTO;
+import com.Laborex.Application.KPI.DTO.FrequenceVenteDTO;
+import com.Laborex.Application.KPI.DTO.ImpactPromotionDTO;
+import com.Laborex.Application.KPI.DTO.PerformanceClientDTO;
+import com.Laborex.Application.KPI.DTO.PerformanceLaboDTO;
+import com.Laborex.Application.KPI.DTO.SaisonaliteDTO;
+import com.Laborex.Application.KPI.DTO.CA.CaParArticleDTO;
+import com.Laborex.Application.KPI.DTO.CA.CaParClientDTO;
+import com.Laborex.Application.KPI.DTO.CA.CaParLaboDTO;
+import com.Laborex.Application.KPI.DTO.CA.CaParPeriodeDTO;
 import com.Laborex.Application.Service.KPI.DuckDBSyncService;
 import com.Laborex.Application.Service.KPI.KpiService;
+
+
 
 @RestController
 @RequestMapping("/api/kpi")
 public class KpiController {
 
-    private final KpiService kpiService;
+	private final KpiService kpiService;
     private final DuckDBSyncService duckDBSyncService; // Ajouter cette dépendance
 
-    public KpiController(KpiService kpiService, DuckDBSyncService duckDBSyncService) {
-        this.kpiService = kpiService;
+    public KpiController(KpiService kpiService,DuckDBSyncService duckDBSyncService) {
+        this.kpiService= kpiService;
         this.duckDBSyncService = duckDBSyncService;
     }
 
-    @GetMapping("/ca-client")
-    public ResponseEntity<?> getCAParClient() {
+   /*Pour les CA de chaque dimensions
+    @GetMapping("/ca-par-client")
+    public ResponseEntity<List<CaParClientDTO>> getCaParClient() {
+        return ResponseEntity.ok(kpiService.getCaParClient());
+    }
+
+    @GetMapping("/ca-par-article")
+    public ResponseEntity<List<CaParArticleDTO>> getCaParArticle() {
+        return ResponseEntity.ok(kpiService.getCaParArticle());
+    }
+
+    @GetMapping("/ca-par-labo")
+    public ResponseEntity<List<CaParLaboDTO>> getCaParLabo() {
+        return ResponseEntity.ok(kpiService.getCaParLabo());
+    }
+
+    @GetMapping("/ca-par-periode")
+    public ResponseEntity<List<CaParPeriodeDTO>> getCaParPeriode() {
+        return ResponseEntity.ok(kpiService.getCaParPeriode());
+    }*/
+    
+    //CA GLOBAL
+    @GetMapping("/dashboard")
+    public ResponseEntity<CaVenteDTO> getCaDashboard() {
         try {
-            List<CaClientDTO> result = kpiService.getChiffreAffairesParClient();
-            
-            if (result.isEmpty()) {
-                // Si aucun résultat, vérifier le contenu des tables
-                Map<String, Object> debug = new HashMap<>();
-                debug.put("message", "Aucun résultat trouvé");
-                debug.put("suggestion", "Vérifiez que les données sont synchronisées dans DuckDB");
-                debug.put("debug_endpoint", "/api/kpi/debug-tables");
-                debug.put("sync_endpoint", "/api/kpi/sync-force");
-                return ResponseEntity.ok(debug);
-            }
-            
-            return ResponseEntity.ok(result);
-            
+        	CaVenteDTO dashboardData = kpiService.getCaDashboardData();
+            return ResponseEntity.ok(dashboardData);
         } catch (Exception e) {
-            Map<String, Object> error = new HashMap<>();
-            error.put("error", e.getMessage());
-            error.put("stackTrace", e.getStackTrace());
-            return ResponseEntity.status(500).body(error);
+            // Gestion d'erreur
+            return ResponseEntity.status(500).body(null);
         }
     }
+    //ROTATION 
+    @GetMapping("/rotation-article")
+    public ResponseEntity<List<FrequenceVenteDTO>> getFrequenceDeVenteParArticle() {
+        try {
+            List<FrequenceVenteDTO> result = kpiService.getFrequenceDeVenteParArticle();
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            // Gérer les erreurs et renvoyer une réponse appropriée
+            return ResponseEntity.status(500).body(null);
+        }
+    }
+    
+    //PERFORMANCE CLIENT
+    @GetMapping("/performance-client")
+    public ResponseEntity<List<PerformanceClientDTO>> getPerformanceClients() {
+        try {
+            List<PerformanceClientDTO> result = kpiService.getPerformanceClients();
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            // Gérer les erreurs
+            return ResponseEntity.status(500).body(null);
+        }
+    }
+    
+    ///PERFORMANCE LABO
+    @GetMapping("/performance-labo")
+    public ResponseEntity<List<PerformanceLaboDTO>> getPerformanceLabo() {
+        try {
+            List<PerformanceLaboDTO> result = kpiService.getPerformanceLabo();
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            // Gérer les erreurs
+            return ResponseEntity.status(500).body(null);
+        }
+    }
+    
+    ///SAISONALITE DES VENTES
+    @GetMapping("/tendance-ventes")
+    public ResponseEntity<List<SaisonaliteDTO>> getTendanceVentes() {
+        try {
+            List<SaisonaliteDTO> result = kpiService.getTendancesMesuelles();
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            // Gérer les erreurs
+            return ResponseEntity.status(500).body(null);
+        }
+    }
+    
+    
+    
+    
+    
     
     // Endpoint pour forcer la synchronisation
     @PostMapping("/sync-force")
@@ -113,41 +184,15 @@ public class KpiController {
         return ResponseEntity.ok(debug);
     }
     
-    // Endpoint pour tester la requête KPI avec plus de debug
-    @GetMapping("/ca-client-debug")
-    public ResponseEntity<?> getCAParClientDebug() {
-        Map<String, Object> response = new HashMap<>();
-        
-        try (Connection conn = DuckDBConnection.getConnection();
-             Statement stmt = conn.createStatement()) {
-            
-            // Compter les ventes et clients
-            ResultSet rsVentes = stmt.executeQuery("SELECT COUNT(*) FROM VENTE");
-            rsVentes.next();
-            response.put("total_ventes", rsVentes.getInt(1));
-            
-            ResultSet rsClients = stmt.executeQuery("SELECT COUNT(*) FROM CLIENT");
-            rsClients.next();
-            response.put("total_clients", rsClients.getInt(1));
-            
-            // Tester la jointure
-            ResultSet rsJoin = stmt.executeQuery("""
-                SELECT COUNT(*) 
-                FROM VENTE v 
-                JOIN CLIENT c ON v.CodeClient = c.CodeCli
-                """);
-            rsJoin.next();
-            response.put("ventes_avec_client", rsJoin.getInt(1));
-            
-            // Les résultats finaux
-            List<CaClientDTO> results = kpiService.getChiffreAffairesParClient();
-            response.put("resultats", results);
-            response.put("nombre_resultats", results.size());
-            
-        } catch (SQLException e) {
-            response.put("error", e.getMessage());
+    //IMPACT PROMOTION
+    @GetMapping("/impact-promotions")
+    public ResponseEntity<List<ImpactPromotionDTO>> getImpactPromotions() {
+        try {
+            List<ImpactPromotionDTO> result = kpiService.getImpactPromotions();
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(null);
         }
-        
-        return ResponseEntity.ok(response);
     }
+    
 }

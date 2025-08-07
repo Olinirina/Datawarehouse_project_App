@@ -16,8 +16,13 @@ import org.springframework.stereotype.Service;
 import com.Laborex.Application.Dao.DuckDBConnection;
 import com.Laborex.Application.Model.Article;
 import com.Laborex.Application.Model.Client;
+import com.Laborex.Application.Model.Comparaison;
+import com.Laborex.Application.Model.Concurrent;
 import com.Laborex.Application.Model.DatePerso;
+import com.Laborex.Application.Model.Labo;
 import com.Laborex.Application.Model.Promotion;
+import com.Laborex.Application.Model.Stock;
+import com.Laborex.Application.Model.Tva;
 import com.Laborex.Application.Model.Vente;
 import com.Laborex.Application.Repository.ArticleRepository;
 import com.Laborex.Application.Repository.ClientRepository;
@@ -29,11 +34,12 @@ import com.Laborex.Application.Repository.PromotionRepository;
 import com.Laborex.Application.Repository.StockRepository;
 import com.Laborex.Application.Repository.TvaRepository;
 import com.Laborex.Application.Repository.VenteRepository;
-
 import jakarta.annotation.PostConstruct;
 
 @Service
 public class DuckDBSyncService {
+
+   
     
     @Autowired
     private VenteRepository venteRepository;
@@ -55,6 +61,7 @@ public class DuckDBSyncService {
     private ConcurrentRepository concurrentRepository;
     @Autowired 
     private ComparaisonRepository comparaisonRepository;
+
     //Executer automatiquement une seule fois
     @PostConstruct
     public void synchroniserToutesLesDonnees() {
@@ -65,10 +72,15 @@ public class DuckDBSyncService {
             
             // Puis synchroniser les données
             synchroniserClients();
+            synchroniserConcurrent();
+            synchroniserLabo();
+            synchroniserTva();
             synchroniserArticles();
             synchroniserDates();
             synchroniserPromotions();
+            synchroniserStock();
             synchroniserVentes();
+            synchroniserComparaison();
             
             System.out.println("Synchronisation DuckDB terminée avec succès !");
         } catch (Exception e) {
@@ -89,56 +101,106 @@ public class DuckDBSyncService {
             stmt.execute("DROP TABLE IF EXISTS DATE_PERSO");
             stmt.execute("DROP TABLE IF EXISTS ARTICLE");
             stmt.execute("DROP TABLE IF EXISTS CLIENT");
+            stmt.execute("DROP TABLE IF EXISTS CONCURRENT");
+            stmt.execute("DROP TABLE IF EXISTS LABO");
+            stmt.execute("DROP TABLE IF EXISTS CLIENT");
+            stmt.execute("DROP TABLE IF EXISTS TVA");
+            stmt.execute("DROP TABLE IF EXISTS STOCK");
+            stmt.execute("DROP TABLE IF EXISTS COMPARAISON");
             
             // Recréer les tables avec les bonnes contraintes
             System.out.println("Création des nouvelles tables...");
             
             stmt.execute("""
-                CREATE TABLE CLIENT (
-                    CodeCli VARCHAR PRIMARY KEY,
-                    NomCli VARCHAR
-                )
-                """);
+            	    CREATE TABLE CLIENT (
+            	        CodeCli VARCHAR PRIMARY KEY,
+            	        NomCli VARCHAR
+            	    )
+            	    """);
+
+            	stmt.execute("""
+            	    CREATE TABLE ARTICLE (
+            	        CodeArticle VARCHAR PRIMARY KEY,
+            	        LibArticle VARCHAR,
+            	        PrixVente DOUBLE,
+            	        CodeLabo VARCHAR,
+            	        CodeTva VARCHAR
+            	    )
+            	    """);
+
+            	stmt.execute("""
+            	    CREATE TABLE DATE_PERSO (
+            	        CodeDate VARCHAR PRIMARY KEY,
+            	        DateValue VARCHAR,
+            	        Jour INT,
+            	        Mois INT,
+            	        Annee INT
+            	    )
+            	    """);
+
+            	stmt.execute("""
+            	    CREATE TABLE PROMOTION (
+            	        CodePromo VARCHAR PRIMARY KEY,
+            	        NomPromo VARCHAR,
+            	        TypePromo VARCHAR,
+            	        UgLivre INT
+            	    )
+            	    """);
+
+            	stmt.execute("""
+            	    CREATE TABLE VENTE (
+            	        CodeVente VARCHAR PRIMARY KEY,
+            	        Quantite_Vendu INT,
+            	        Montant_Vente DOUBLE,
+            	        CodeClient VARCHAR,
+            	        CodeArticle VARCHAR,
+            	        CodeDate VARCHAR,
+            	        CodePromo VARCHAR
+            	    )
+            	    """);
+
+            	stmt.execute("""
+            	    CREATE TABLE STOCK (
+            	        CodeStock BIGINT PRIMARY KEY,
+            	        QuantiteStocke INT,
+            	        CoursRoute INT,
+            	        CodeArticle VARCHAR
+            	    )
+            	    """);
+
+            	stmt.execute("""
+            	    CREATE TABLE COMPARAISON (
+            	        CodeComparaison BIGINT PRIMARY KEY,
+            	        PrixConcurrent DOUBLE,
+            	        Variation DOUBLE,
+            	        nouveauPrix DOUBLE,
+            	        CodeConcurrent VARCHAR,
+            	        CodeArticle VARCHAR
+            	    )
+            	    """);
+
+            	stmt.execute("""
+            	    CREATE TABLE CONCURRENT (
+            	        CodeConcurrent VARCHAR PRIMARY KEY,
+            	        NomConcurrent VARCHAR
+            	    )
+            	    """);
+
+            	stmt.execute("""
+            	    CREATE TABLE LABO (
+            	        CodeLabo VARCHAR PRIMARY KEY,
+            	        NomLabo VARCHAR
+            	    )
+            	    """);
+
+            	stmt.execute("""
+            	    CREATE TABLE TVA (
+            	        CodeTva VARCHAR PRIMARY KEY,
+            	        Taux DOUBLE,
+            	        Nature VARCHAR
+            	    )
+            	    """);
             
-            stmt.execute("""
-                CREATE TABLE ARTICLE (
-                    CodeArticle VARCHAR PRIMARY KEY,
-                    LibArticle VARCHAR,
-                    CodeLabo VARCHAR,
-                    CodeTva VARCHAR
-                )
-                """);
-            
-            stmt.execute("""
-                CREATE TABLE DATE_PERSO (
-                    CodeDate VARCHAR PRIMARY KEY,
-                    DateValue VARCHAR,
-                    Jour INT,
-                    Mois INT,
-                    Annee INT
-                )
-                """);
-            
-            stmt.execute("""
-                CREATE TABLE PROMOTION (
-                    CodePromo VARCHAR PRIMARY KEY,
-                    NomPromo VARCHAR,
-                    TypePromo VARCHAR,
-                    UgLivre INT
-                )
-                """);
-            
-            stmt.execute("""
-                CREATE TABLE VENTE (
-                    CodeVente VARCHAR PRIMARY KEY,
-                    Quantite_Vendu INT,
-                    Montant_Vente DOUBLE,
-                    CodeClient VARCHAR,
-                    CodeArticle VARCHAR,
-                    CodeDate VARCHAR,
-                    CodePromo VARCHAR
-                )
-                """);
             
             System.out.println("Tables créées avec succès");
         }
@@ -311,7 +373,7 @@ public class DuckDBSyncService {
     public void synchroniserVentes() throws SQLException {
         List<Vente> ventes = venteRepository.findAll();
         if (ventes.isEmpty()) {
-            System.out.println("⚠️ Aucune vente trouvée dans PostgreSQL");
+            System.out.println("Aucune vente trouvée dans PostgreSQL");
             return;
         }
         
@@ -383,6 +445,186 @@ public class DuckDBSyncService {
             System.out.println("Synchronisé " + totalProcessed + " ventes sur " + ventes.size());
         }
     }
+    
+    //Synchronisation stock
+    public void synchroniserStock() throws SQLException{
+    	List<Stock> stocks= stockRepository.findAll();
+    	if(stocks.isEmpty()) {
+    		System.out.println("Aucune stock trouvée dans la PostgreSQL");
+    		return;
+    	}
+    	try(Connection conn = DuckDBConnection.getConnection()){
+    		int batchSize = 1000;
+    		int totalProcessed= 0;
+    		
+    		for(int i=0; i<stocks.size();i += batchSize) {
+    			int endIndex= Math.min(i + batchSize,  stocks.size());
+    			List<Stock> batch= stocks.subList(i, endIndex);
+    			
+    			StringBuilder batchSql= new StringBuilder("INSERT INTO STOCK (CodeStock,QuantiteStocke,CoursRoute,CodeArticle) VALUES ");
+    			for (int j =0; j < batch.size(); j++) {
+    				if(j >0) batchSql.append(", ");
+    				batchSql.append("(?, ?, ?, ?)");
+    			}
+    			try (PreparedStatement stmt = conn.prepareStatement(batchSql.toString())){
+    				int paramIndex= 1;
+    				for(Stock s : batch) {
+    					stmt.setLong(paramIndex++, s.getCodeStock());
+    					stmt.setInt(paramIndex++, s.getQuantiteStocke());
+    					stmt.setInt(paramIndex++, s.getCoursRoute());
+    					stmt.setString(paramIndex++, s.getArticle() != null ? s.getArticle().getCodeArticle() : null);
+    				}
+    				stmt.executeUpdate();
+    				totalProcessed += batch.size();
+    			}
+    		}
+    		System.out.println("Synchronisé " + totalProcessed + " stocks");  	
+    	}
+    }
+    //Synchronisation Concurrent
+    public void synchroniserConcurrent() throws SQLException{
+    	List<Concurrent> concurrents= concurrentRepository.findAll();
+    	if(concurrents.isEmpty()) {
+    		System.out.println("Aucune concurrent trouvée dans la PostgreSQL");
+    		return;
+    	}
+    	try(Connection conn = DuckDBConnection.getConnection()){
+    		int batchSize = 1000;
+    		int totalProcessed= 0;
+    		
+    		for(int i=0; i<concurrents.size();i += batchSize) {
+    			int endIndex= Math.min(i + batchSize,  concurrents.size());
+    			List<Concurrent> batch= concurrents.subList(i, endIndex);
+    			
+    			StringBuilder batchSql= new StringBuilder("INSERT INTO CONCURRENT (CodeConcurrent, NomConcurrent) VALUES ");
+    			for (int j =0; j < batch.size(); j++) {
+    				if(j >0) batchSql.append(", ");
+    				batchSql.append("(?, ?)");
+    			}
+    			try (PreparedStatement stmt = conn.prepareStatement(batchSql.toString())){
+    				int paramIndex= 1;
+    				for(Concurrent c : batch) {
+    					stmt.setString(paramIndex++, c.getCodeConcurrent());
+    					stmt.setString(paramIndex++, c.getNomConcurrent());
+    				}
+    				stmt.executeUpdate();
+    				totalProcessed += batch.size();
+    			}
+    		}
+    		System.out.println("Synchronisé" + totalProcessed + "concurrents");    	
+    	}
+    }
+    
+  //Synchronisation Labo
+    public void synchroniserLabo() throws SQLException{
+    	List<Labo> labos= laboRepository.findAll();
+    	if(labos.isEmpty()) {
+    		System.out.println("Aucun labo trouvé dans la PostgreSQL");
+    		return;
+    	}
+    	try(Connection conn = DuckDBConnection.getConnection()){
+    		int batchSize = 1000;
+    		int totalProcessed= 0;
+    		
+    		for(int i=0; i<labos.size();i += batchSize) {
+    			int endIndex= Math.min(i + batchSize,  labos.size());
+    			List<Labo> batch= labos.subList(i, endIndex);
+    			
+    			StringBuilder batchSql= new StringBuilder("INSERT INTO LABO (CodeLabo, NomLabo) VALUES ");
+    			for (int j =0; j < batch.size(); j++) {
+    				if(j >0) batchSql.append(", ");
+    				batchSql.append("(?, ?)");
+    			}
+    			try (PreparedStatement stmt = conn.prepareStatement(batchSql.toString())){
+    				int paramIndex= 1;
+    				for(Labo l : batch) {
+    					stmt.setString(paramIndex++, l.getCodeLabo());
+    					stmt.setString(paramIndex++, l.getNomLabo());
+    				}
+    				stmt.executeUpdate();
+    				totalProcessed += batch.size();
+    			}
+    		}
+    		System.out.println("Synchronisé " + totalProcessed + " labos");    	
+    	}
+    }
+    
+  //Synchronisation TVA
+    public void synchroniserTva() throws SQLException{
+    	List<Tva> tvas= tvaRepository.findAll();
+    	if(tvas.isEmpty()) {
+    		System.out.println("Aucune TVA trouvée dans la PostgreSQL");
+    		return;
+    	}
+    	try(Connection conn = DuckDBConnection.getConnection()){
+    		int batchSize = 1000;
+    		int totalProcessed= 0;
+    		
+    		for(int i=0; i<tvas.size();i += batchSize) {
+    			int endIndex= Math.min(i + batchSize,  tvas.size());
+    			List<Tva> batch= tvas.subList(i, endIndex);
+    			
+    			StringBuilder batchSql= new StringBuilder("INSERT INTO TVA (CodeTva, Taux, Nature) VALUES ");
+    			for (int j =0; j < batch.size(); j++) {
+    				if(j >0) batchSql.append(", ");
+    				batchSql.append("(?, ?,?)");
+    			}
+    			try (PreparedStatement stmt = conn.prepareStatement(batchSql.toString())){
+    				int paramIndex= 1;
+    				for(Tva t : batch) {
+    					stmt.setString(paramIndex++, t.getCodeTva());
+    					stmt.setDouble(paramIndex++, t.getTaux());
+    					stmt.setString(paramIndex++, t.getNature());
+    				}
+    				stmt.executeUpdate();
+    				totalProcessed += batch.size();
+    			}
+    		}
+    		System.out.println("Synchronisé " + totalProcessed + " tvas");   	
+    	}
+    }
+    
+  //Synchronisation Comparaison
+ // Code corrigé
+    public void synchroniserComparaison() throws SQLException {
+        List<Comparaison> compars = comparaisonRepository.findAll();
+        if (compars.isEmpty()) {
+            System.out.println("Aucune comparaison trouvée dans la PostgreSQL");
+            return;
+        }
+        try (Connection conn = DuckDBConnection.getConnection()) {
+            int batchSize = 1000;
+            int totalProcessed = 0;
+
+            for (int i = 0; i < compars.size(); i += batchSize) {
+                int endIndex = Math.min(i + batchSize, compars.size());
+                List<Comparaison> batch = compars.subList(i, endIndex);
+
+                StringBuilder batchSql = new StringBuilder("INSERT INTO COMPARAISON (CodeComparaison, PrixConcurrent, Variation, NouveauPrix, CodeConcurrent, CodeArticle) VALUES ");
+                for (int j = 0; j < batch.size(); j++) {
+                    if (j > 0) batchSql.append(", ");
+                    batchSql.append("(?, ?, ?, ?, ?, ?)");
+                }
+
+                try (PreparedStatement stmt = conn.prepareStatement(batchSql.toString())) {
+                    int paramIndex = 1;
+                    for (Comparaison c : batch) {
+                        stmt.setLong(paramIndex++, c.getCodeComparaison());
+                        stmt.setDouble(paramIndex++, c.getPrixConcurrent());
+                        stmt.setDouble(paramIndex++, c.getVariation() != null ? c.getVariation() : 0.0);
+                        stmt.setDouble(paramIndex++, c.getNouveauPrix() !=null ? c.getNouveauPrix() : 0);
+                        stmt.setString(paramIndex++, c.getConcurrent() != null ? c.getConcurrent().getCodeConcurrent() : null);
+                        stmt.setString(paramIndex++, c.getArticle() != null ? c.getArticle().getCodeArticle() : null);
+                    }
+                    stmt.executeUpdate();
+                    totalProcessed += batch.size();
+                }
+            }
+            System.out.println("Synchronisé " + totalProcessed + " comparaisons"); // Correction du message
+        }
+    }
+    
+    
     /** Fin methode de synchronisation***/
     
     //Lancer manuellement la synchronisation
