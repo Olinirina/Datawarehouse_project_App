@@ -43,6 +43,12 @@
 		    <groupId>org.apache.poi</groupId>
 		    <artifactId>poi-ooxml</artifactId>
 		    <version>5.2.2</version>-->
+		    <!-- Pour l'utilisation de duckdb_jdbc -->
+		    <dependency>
+			    <groupId>org.duckdb</groupId>
+			    <artifactId>duckdb_jdbc</artifactId>
+			    <version>0.9.2</version> <!-- vérifie ici : https://mvnrepository.com/artifact/org.duckdb/duckdb_jdbc -->
+			</dependency>
 		    <dependency>
 			    <groupId>org.apache.poi</groupId>
 			    <artifactId>poi-ooxml</artifactId>

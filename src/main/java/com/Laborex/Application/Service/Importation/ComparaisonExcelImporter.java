@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellType;
@@ -29,7 +30,7 @@ public class ComparaisonExcelImporter implements ExcelImportation {
 	public ComparaisonRepository comparaisonRepository;
 	@Override
 	public boolean supports(String filename) {
-		return filename.toLowerCase().contains("compar");
+		return filename.toLowerCase().contains("com");
 	}
 
 	@Override
@@ -59,67 +60,124 @@ public class ComparaisonExcelImporter implements ExcelImportation {
 			
 			//Articles
             String codeArticle= getStringValue(row.getCell(columnIndexMap.get("CODE")));
-            String libelleArticle= getStringValue(row.getCell(columnIndexMap.get("LIBELLÉ")));
-            double prixVente= getNumericValue(row.getCell(columnIndexMap.get("PRIX DE VENTE ACTUEL")));
+            String libelleArticle= getStringValue(row.getCell(columnIndexMap.get("LIBELLE")));
+            Double prixVente= getNumericValue(row.getCell(columnIndexMap.get("PRIXACTUEL")));
 			//Gestion des articles
-			Article article = articleRepository.findById(codeArticle)
-		            .orElseGet(() -> {
-		                Article newArticle = new Article();
-		                newArticle.setCodeArticle(codeArticle);
-		                newArticle.setLibelle(libelleArticle);
-		                newArticle.setPrixVente(prixVente);
-		                return articleRepository.save(newArticle);
-		            });
+            Article article = articleRepository.findById(codeArticle)
+            	    .map(existingArticle -> {
+            	        existingArticle.setLibelle(libelleArticle);  // mise à jour du libellé
+            	        existingArticle.setPrixVente(prixVente);     // mise à jour du prix
+            	        return articleRepository.save(existingArticle);
+            	    })
+            	    .orElseGet(() -> {
+            	        Article newArticle = new Article();
+            	        newArticle.setCodeArticle(codeArticle);
+            	        newArticle.setLibelle(libelleArticle);
+            	        newArticle.setPrixVente(prixVente);
+            	        return articleRepository.save(newArticle);
+            	    });
+
 			
-			// Pour chaque concurrent
-			for (String nomConcurrent : concurrents) {
-			    String nomCol = nomConcurrent.trim().toUpperCase();
-			    if (!columnIndexMap.containsKey(nomCol)) {
-			        continue;
-			    }
+         // Pour chaque concurrent
+            for (String nomConcurrent : concurrents) {
+                String nomCol = nomConcurrent.trim().toUpperCase();
+                if (!columnIndexMap.containsKey(nomCol)) {
+                    continue;
+                }
 
-			    Integer colIndex = columnIndexMap.get(nomCol);
-			    double prixConcurrent = getNumericValue(row.getCell(colIndex));
+                Integer colIndex = columnIndexMap.get(nomCol);
+                double prixConcurrent = getNumericValue(row.getCell(colIndex));
 
-			    Concurrent concurrent = concurrentRepository.findById(nomConcurrent)
-			        .orElseGet(() -> {
-			            Concurrent newConcurrent = new Concurrent();
-			            newConcurrent.setCodeConcurrent(nomConcurrent);
-			            newConcurrent.setNomConcurrent(nomConcurrent);
-			            return concurrentRepository.save(newConcurrent);
-			        });
+                // Vérifie si la cellule est vide ou non numérique
+                if (prixConcurrent == 0) {
+                    continue; // ignore les valeurs nulles ou invalides
+                }
 
-			    Comparaison comparaison = new Comparaison();
-			    comparaison.setArticle(article);
-			    comparaison.setConcurrent(concurrent);
-			    comparaison.setPrixConcurrent(prixConcurrent);	            
+                Concurrent concurrent = concurrentRepository.findById(nomConcurrent)
+                    .orElseGet(() -> {
+                        Concurrent newConcurrent = new Concurrent();
+                        newConcurrent.setCodeConcurrent(nomConcurrent);
+                        newConcurrent.setNomConcurrent(nomConcurrent);
+                        return concurrentRepository.save(newConcurrent);
+                    });
 
-			    comparaisonRepository.save(comparaison);
-			}
-	        rowIndex++;
-			
-			
+                // Rechercher une comparaison existante entre cet article et ce concurrent
+                Optional<Comparaison> existing = comparaisonRepository
+                    .findByArticleAndConcurrent(article, concurrent);
+
+                if (existing.isPresent()) {
+                    Comparaison c = existing.get();
+                    c.setPrixConcurrent(prixConcurrent);
+                    comparaisonRepository.save(c);
+                } else {
+                    Comparaison c = new Comparaison();
+                    c.setArticle(article);
+                    c.setConcurrent(concurrent);
+                    c.setPrixConcurrent(prixConcurrent);
+                    comparaisonRepository.save(c);
+                }
+
+            }
+
+	        rowIndex++;			
 		}
-	        
-	     
+  
 		
 	}
 	
 	// Méthodes utilitaires
-    public double getNumericValue(Cell cell) {
-        if (cell == null) return 0;
+	public double getNumericValue(Cell cell) {
+	    if (cell == null) return 0;
+	    
+	    try {
+	        switch (cell.getCellType()) {
+	            case NUMERIC:
+	                return cell.getNumericCellValue();
+	                
+	            case FORMULA:
+	                // Évaluer le type de résultat de la formule
+	                switch (cell.getCachedFormulaResultType()) {
+	                    case NUMERIC:
+	                        return cell.getNumericCellValue();
+	                    case STRING:
+	                        String stringResult = cell.getStringCellValue();
+	                        // Si la formule retourne une chaîne vide, retourner 0
+	                        if (stringResult == null || stringResult.trim().isEmpty()) {
+	                            return 0;
+	                        }
+	                        // Tenter de convertir la chaîne en nombre
+	                        try {
+	                            return Double.parseDouble(stringResult.replace(",", "."));
+	                        } catch (NumberFormatException e) {
+	                            return 0;
+	                        }
+	                    case ERROR:
+	                        return 0;
+	                    default:
+	                        return 0;
+	                }
+	                
+	            case STRING:
+	                String stringValue = cell.getStringCellValue();
+	                if (stringValue == null || stringValue.trim().isEmpty()) {
+	                    return 0;
+	                }
+	                try {
+	                    return Double.parseDouble(stringValue.replace(",", "."));
+	                } catch (NumberFormatException e) {
+	                    return 0;
+	                }
+	                
+	            default:
+	                return 0;
+	        }
+	    } catch (Exception e) {
+	        // En cas d'erreur inattendue, retourner 0
+	        System.err.println("Erreur lors de la lecture de la cellule: " + e.getMessage());
+	        return 0;
+	    }
+	}
 
-        if (cell.getCellType() == CellType.NUMERIC) {
-            return cell.getNumericCellValue();
-        } else if (cell.getCellType() == CellType.STRING) {
-            try {
-                return Double.parseDouble(cell.getStringCellValue().replace(",", "."));
-            } catch (NumberFormatException e) {
-                return 0; // ou logger une erreur
-            }
-        }
-        return 0;
-    }
 
     public String getStringValue(Cell cell) {
         if (cell == null) return "";
