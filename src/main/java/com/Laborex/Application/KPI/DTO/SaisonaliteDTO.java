@@ -4,15 +4,23 @@ public class SaisonaliteDTO {
 	private int annee;
 	private int mois;
 	private double chiffreAffaire;
+	private String interpretation;
 	public SaisonaliteDTO() {
 		super();
 		// TODO Auto-generated constructor stub
 	}
-	public SaisonaliteDTO(int annee, int mois, double chiffreAffaire) {
+	public SaisonaliteDTO(int annee, int mois, double chiffreAffaire, String interpretation) {
 		super();
 		this.annee = annee;
 		this.mois = mois;
 		this.chiffreAffaire = chiffreAffaire;
+		this.interpretation= interpretation;
+	}
+	public String getInterpretation() {
+		return interpretation;
+	}
+	public void setInterpretation(String interpretation) {
+		this.interpretation = interpretation;
 	}
 	public int getAnnee() {
 		return annee;

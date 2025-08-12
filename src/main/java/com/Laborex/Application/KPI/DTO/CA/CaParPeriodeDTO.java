@@ -3,15 +3,17 @@ package com.Laborex.Application.KPI.DTO.CA;
 public class CaParPeriodeDTO {
 	private int annee;
     private int mois;
+    private int jour;
     private double chiffreAffaires;
 	public CaParPeriodeDTO() {
 		super();
 		// TODO Auto-generated constructor stub
 	}
-	public CaParPeriodeDTO(int annee, int mois, double chiffreAffaires) {
+	public CaParPeriodeDTO(int annee, int mois,int jour, double chiffreAffaires) {
 		super();
 		this.annee = annee;
 		this.mois = mois;
+		this.jour= jour;
 		this.chiffreAffaires = chiffreAffaires;
 	}
 	public int getAnnee() {
@@ -19,6 +21,12 @@ public class CaParPeriodeDTO {
 	}
 	public void setAnnee(int annee) {
 		this.annee = annee;
+	}
+	public int getJour() {
+		return jour;
+	}
+	public void setJour(int jour) {
+		this.jour = jour;
 	}
 	public int getMois() {
 		return mois;

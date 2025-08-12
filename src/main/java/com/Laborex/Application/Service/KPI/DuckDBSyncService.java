@@ -149,7 +149,8 @@ public class DuckDBSyncService {
 
             	stmt.execute("""
             	    CREATE TABLE VENTE (
-            	        CodeVente VARCHAR PRIMARY KEY,
+            			idVente BIGINT PRIMARY KEY,
+            	        CodeVente VARCHAR,
             	        Quantite_Vendu INT,
             	        Montant_Vente DOUBLE,
             	        CodeClient VARCHAR,
@@ -386,16 +387,17 @@ public class DuckDBSyncService {
                 int endIndex = Math.min(i + batchSize, ventes.size());
                 List<Vente> batch = ventes.subList(i, endIndex);
                 
-                StringBuilder batchSql = new StringBuilder("INSERT INTO VENTE (CodeVente, Quantite_Vendu, Montant_Vente, CodeClient, CodeArticle, CodeDate, CodePromo) VALUES ");
+                StringBuilder batchSql = new StringBuilder("INSERT INTO VENTE (idVente,CodeVente, Quantite_Vendu, Montant_Vente, CodeClient, CodeArticle, CodeDate, CodePromo) VALUES ");
                 for (int j = 0; j < batch.size(); j++) {
                     if (j > 0) batchSql.append(", ");
-                    batchSql.append("(?, ?, ?, ?, ?, ?, ?)");
+                    batchSql.append("(?,?, ?, ?, ?, ?, ?, ?)");
                 }
                 
                 try (PreparedStatement stmt = conn.prepareStatement(batchSql.toString())) {
                     int paramIndex = 1;
                     for (Vente v : batch) {
                         try {
+                        	stmt.setLong(paramIndex++, v.getIdVente());
                             stmt.setString(paramIndex++, v.getCodeVente());
                             stmt.setInt(paramIndex++, v.getQuantiteVendu());
                             stmt.setDouble(paramIndex++, v.getMontantVente());
@@ -405,40 +407,14 @@ public class DuckDBSyncService {
                             stmt.setString(paramIndex++, v.getPromotion() != null ? v.getPromotion().getCodePromo() : null);
                         } catch (Exception e) {
                             System.err.println("⚠️ Erreur avec la vente " + v.getCodeVente() + ": " + e.getMessage());
-                            // Continuer avec des valeurs par défaut
-                            stmt.setString(paramIndex++, v.getCodeVente());
-                            stmt.setInt(paramIndex++, 0);
-                            stmt.setDouble(paramIndex++, 0.0);
-                            stmt.setString(paramIndex++, null);
-                            stmt.setString(paramIndex++, null);
-                            stmt.setString(paramIndex++, null);
-                            stmt.setString(paramIndex++, null);
+                            
                         }
                     }
                     
                     stmt.executeUpdate();
                     totalProcessed += batch.size();
                 } catch (SQLException e) {
-                    System.err.println("Erreur lors de l'insertion du batch: " + e.getMessage());
-                    // Essayer les insertions une par une pour ce batch
-                    for (Vente v : batch) {
-                        try {
-                            String singleSql = "INSERT INTO VENTE (CodeVente, Quantite_Vendu, Montant_Vente, CodeClient, CodeArticle, CodeDate, CodePromo) VALUES (?, ?, ?, ?, ?, ?, ?)";
-                            try (PreparedStatement singleStmt = conn.prepareStatement(singleSql)) {
-                                singleStmt.setString(1, v.getCodeVente());
-                                singleStmt.setInt(2, v.getQuantiteVendu());
-                                singleStmt.setDouble(3, v.getMontantVente());
-                                singleStmt.setString(4, v.getClient() != null ? v.getClient().getCodeCli() : null);
-                                singleStmt.setString(5, v.getArticle() != null ? v.getArticle().getCodeArticle() : null);
-                                singleStmt.setString(6, v.getDate() != null ? v.getDate().getCodeDate() : null);
-                                singleStmt.setString(7, v.getPromotion() != null ? v.getPromotion().getCodePromo() : null);
-                                singleStmt.executeUpdate();
-                                totalProcessed++;
-                            }
-                        } catch (SQLException se) {
-                            System.err.println("Impossible d'insérer la vente " + v.getCodeVente() + ": " + se.getMessage());
-                        }
-                    }
+                    System.err.println("Erreur lors de l'insertion du batch: " + e.getMessage());                   
                 }
             }
             

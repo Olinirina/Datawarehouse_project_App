@@ -5,14 +5,20 @@ import jakarta.persistence.*;
 @Entity
 public class Vente {
 
-    @Id
-    private String codeVente;
+    @Id 
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long idVente;
+    public Long getIdVente() {
+		return idVente;
+	}
+
+	public void setIdVente(Long idVente) {
+		this.idVente = idVente;
+	}
+
+	private String codeVente;
     private int quantiteVendu;
     private double montantVente;
-
-  /*  @ManyToOne
-    @JoinColumn(name = "codeRegion") // si "region" est une entité, on précise la jointure
-    private Region region;*/
 
     @ManyToOne
     @JoinColumn(name = "codeCli")

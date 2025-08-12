@@ -12,21 +12,29 @@ import java.util.List;
 @Service
 public class VenteBatchService {
 
-    @PersistenceContext
-    private EntityManager entityManager;
+	 @PersistenceContext
+	    private EntityManager entityManager;
 
-    @Transactional
-    public void insertInBatch(List<Vente> ventes) {
-        int batchSize = 500;
-        for (int i = 0; i < ventes.size(); i++) {
-            entityManager.persist(ventes.get(i));
-            if (i > 0 && i % batchSize == 0) {
-                entityManager.flush();
-                entityManager.clear();
-            }
-        }
-        entityManager.flush(); // pour les derniers éléments
-        entityManager.clear();
-    }
+	    /**
+	     * Insère une liste d'entités en utilisant le mode batch.
+	     * @param entities La liste des entités à insérer.
+	     */
+	    @Transactional
+	    public <T> void insertInBatch(List<T> entities) {
+	        if (entities == null || entities.isEmpty()) {
+	            return;
+	        }
+
+	        int batchSize = 50000;
+	        for (int i = 0; i < entities.size(); i++) {
+	            entityManager.persist(entities.get(i));
+	            if (i > 0 && i % batchSize == 0) {
+	                entityManager.flush();
+	                entityManager.clear();
+	            }
+	        }
+	        entityManager.flush();
+	        entityManager.clear();
+	    }
 
 }

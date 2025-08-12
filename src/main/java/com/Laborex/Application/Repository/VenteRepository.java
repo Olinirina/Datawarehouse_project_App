@@ -10,6 +10,6 @@ import org.springframework.stereotype.Repository;
 import com.Laborex.Application.Model.Vente;
 
 @Repository
-public interface VenteRepository extends JpaRepository<Vente, String> {
+public interface VenteRepository extends JpaRepository<Vente, Long> {
 
 }

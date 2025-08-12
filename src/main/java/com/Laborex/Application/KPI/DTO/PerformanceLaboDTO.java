@@ -4,15 +4,24 @@ public class PerformanceLaboDTO {
 	private String labo;
 	private double chiffreAffaire;
 	private Long nombreArticle;
+	private String interpretation;
 	public PerformanceLaboDTO() {
 		super();
 		// TODO Auto-generated constructor stub
 	}
-	public PerformanceLaboDTO(String labo, double chiffreAffaire, Long nombreArticle) {
+	public PerformanceLaboDTO(String labo, double chiffreAffaire, Long nombreArticle,String interpretation) {
 		super();
 		this.labo = labo;
 		this.chiffreAffaire = chiffreAffaire;
 		this.nombreArticle = nombreArticle;
+		this.interpretation= interpretation;
+	}
+	
+	public String getInterpretation() {
+		return interpretation;
+	}
+	public void setInterpretation(String interpretation) {
+		this.interpretation = interpretation;
 	}
 	public String getLabo() {
 		return labo;

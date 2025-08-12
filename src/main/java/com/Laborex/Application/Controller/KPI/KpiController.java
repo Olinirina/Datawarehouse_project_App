@@ -43,7 +43,7 @@ public class KpiController {
         this.duckDBSyncService = duckDBSyncService;
     }
 
-   /*Pour les CA de chaque dimensions
+   //Pour les CA de chaque dimensions
     @GetMapping("/ca-par-client")
     public ResponseEntity<List<CaParClientDTO>> getCaParClient() {
         return ResponseEntity.ok(kpiService.getCaParClient());
@@ -62,7 +62,23 @@ public class KpiController {
     @GetMapping("/ca-par-periode")
     public ResponseEntity<List<CaParPeriodeDTO>> getCaParPeriode() {
         return ResponseEntity.ok(kpiService.getCaParPeriode());
-    }*/
+    }
+    @GetMapping("/interpretation/CAperiode")
+    public ResponseEntity<String> getCaInterpretationParPeriode() {
+        return ResponseEntity.ok(kpiService.getInterpretationCaParPeriode());
+    }
+    @GetMapping("/interpretation/CAClient")
+    public ResponseEntity<String> getCaInterpretationParClient() {
+        return ResponseEntity.ok(kpiService.getInterpretationCaParClient());
+    }
+    @GetMapping("/interpretation/CAArticle")
+    public ResponseEntity<String> getCaInterpretationParArticle() {
+        return ResponseEntity.ok(kpiService.getInterpretationCaParArticle());
+    }
+    @GetMapping("/interpretation/CALabo")
+    public ResponseEntity<String> getCaInterpretationParLabo() {
+        return ResponseEntity.ok(kpiService.getInterpretationCaParLabo());
+    }
     
     //CA GLOBAL
     @GetMapping("/dashboard")
@@ -123,9 +139,17 @@ public class KpiController {
         }
     }
     
-    
-    
-    
+    //IMPACT PROMOTION
+    @GetMapping("/impact-promotions")
+    public ResponseEntity<List<ImpactPromotionDTO>> getImpactPromotions() {
+        try {
+            List<ImpactPromotionDTO> result = kpiService.getImpactPromotions();
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(null);
+        }
+    }
+
     
     
     // Endpoint pour forcer la synchronisation
@@ -184,15 +208,6 @@ public class KpiController {
         return ResponseEntity.ok(debug);
     }
     
-    //IMPACT PROMOTION
-    @GetMapping("/impact-promotions")
-    public ResponseEntity<List<ImpactPromotionDTO>> getImpactPromotions() {
-        try {
-            List<ImpactPromotionDTO> result = kpiService.getImpactPromotions();
-            return ResponseEntity.ok(result);
-        } catch (Exception e) {
-            return ResponseEntity.status(500).body(null);
-        }
-    }
+   
     
 }
