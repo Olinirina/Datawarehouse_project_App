@@ -11,5 +11,6 @@ import com.Laborex.Application.Model.Vente;
 
 @Repository
 public interface VenteRepository extends JpaRepository<Vente, Long> {
+	
 
 }

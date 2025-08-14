@@ -267,10 +267,10 @@ public class DuckDBSyncService {
                 int endIndex = Math.min(i + batchSize, articles.size());
                 List<Article> batch = articles.subList(i, endIndex);
                 
-                StringBuilder batchSql = new StringBuilder("INSERT INTO ARTICLE (CodeArticle, LibArticle, CodeLabo, CodeTva) VALUES ");
+                StringBuilder batchSql = new StringBuilder("INSERT INTO ARTICLE (CodeArticle, LibArticle,PrixVente, CodeLabo, CodeTva) VALUES ");
                 for (int j = 0; j < batch.size(); j++) {
                     if (j > 0) batchSql.append(", ");
-                    batchSql.append("(?, ?, ?, ?)");
+                    batchSql.append("(?, ?, ?, ?,?)");
                 }
                 
                 try (PreparedStatement stmt = conn.prepareStatement(batchSql.toString())) {
@@ -278,7 +278,8 @@ public class DuckDBSyncService {
                     for (Article a : batch) {
                         stmt.setString(paramIndex++, a.getCodeArticle());
                         stmt.setString(paramIndex++, a.getLibelle());
-                        //Gestion des valeurs nulles
+                        
+                        stmt.setDouble(paramIndex++, a.getPrixVente() !=null ? a.getPrixVente() : 0.0);                       //Gestion des valeurs nulles
                         stmt.setString(paramIndex++, a.getLabo() != null ? a.getLabo().getCodeLabo() : null);
                         stmt.setString(paramIndex++, a.getTva() != null ? a.getTva().getCodeTva() : null);
                     }

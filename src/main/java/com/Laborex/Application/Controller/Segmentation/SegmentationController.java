@@ -27,7 +27,7 @@ public class SegmentationController {
 	    public ResponseEntity<List<ClassificationACBDTO>> getAbcClient() {
 	        return ResponseEntity.ok(abcService.getAbcAnalyseParClient());
 	    }
-		//CLASSIFICATION CLIENTS
+	//CLASSIFICATION CLIENTS
 	@GetMapping("/abc/labo")
 	public ResponseEntity<List<ClassificationACBDTO>> getAbcLabo() {
 		return ResponseEntity.ok(abcService.getAbcAnalyseParLabo());

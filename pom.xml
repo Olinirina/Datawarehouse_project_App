@@ -55,11 +55,20 @@
 			    <version>4.1.2</version> <!-- version compatible -->
 			</dependency>
 		<!-- Pour les objets json dans le service -->
-		<dependency>
-		    <groupId>org.json</groupId>
-		    <artifactId>json</artifactId>
-		    <version>20240303</version>
-		</dependency>
+			<dependency>
+			    <groupId>org.json</groupId>
+			    <artifactId>json</artifactId>
+			    <version>20240303</version>
+			</dependency>
+			
+			<dependency>
+		        <groupId>com.github.haifengl</groupId>
+		        <artifactId>smile-core</artifactId>
+		        <version>3.0.1</version>
+		    </dependency>
+		    
+	
+
 		<!--lire un fichier .xlsx ligne par ligne sans tout charger en mémoire-->
 		<dependency>
 		    <groupId>com.monitorjbl</groupId>
