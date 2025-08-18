@@ -7,10 +7,13 @@ import org.springframework.stereotype.Service;
 
 import com.Laborex.Application.Dao.DuckDBConnection;
 import com.Laborex.Application.Model.Alerte.NiveauSeverite;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Service
 public class SeuilCalculService {
 
+	private static final Logger log = LoggerFactory.getLogger(StockCritiqueService.class);
     /**
      * Calcule le seuil critique pour un article basé sur l'historique des ventes
      * Formule : Moyenne des ventes sur 30 jours * coefficient de sécurité (1.5) * nombre de jours (7)
@@ -25,8 +28,9 @@ public class SeuilCalculService {
 				     COALESCE(AVG(v.Quantite_Vendu), 0) as moyenne_vente
 				FROM VENTE v
 				JOIN DATE_PERSO d ON v.CodeDate = d.CodeDate
-				WHERE v.CodeArticle = ?
+				WHERE v.CodeArticle = ? AND
 				CAST(d.DateValue AS DATE) >= (SELECT MAX(CAST(DateValue AS DATE)) FROM DATE_PERSO) - INTERVAL '30 days'
+				ORDER BY moyenne_vente
             """;
 
             try (Connection conn = DuckDBConnection.getConnection();
@@ -42,9 +46,11 @@ public class SeuilCalculService {
                     }
                 }
             }
+            log.info("Début de la seuil");
 
             if (moyenneVente == null || moyenneVente == 0) {
                 // Si pas d'historique de ventes, utiliser un seuil par défaut de 10
+            	log.info("Pas d'historique donc seuil 10");
                 return 10.0;
             }
 
@@ -54,6 +60,7 @@ public class SeuilCalculService {
         } catch (Exception e) {
             System.err.println("Erreur lors du calcul du seuil critique pour l'article " + codeArticle + ": " + e.getMessage());
             // En cas d'erreur, retourner un seuil par défaut pour éviter un crash
+            log.error("Erreur lors de la détection", e);
             return 10.0;
         }
     }
@@ -77,6 +84,16 @@ public class SeuilCalculService {
         if (moisInactif >= 12) return NiveauSeverite.CRITIQUE;
         if (moisInactif >= 6) return NiveauSeverite.ELEVE;
         if (moisInactif >= 3) return NiveauSeverite.MODERE;
+        return NiveauSeverite.FAIBLE;
+    }
+    
+    /**
+     * Détermine la sévérité pour l'anomalie des ventes
+     */
+    public NiveauSeverite determinerSeveriteAnomalies(Double pourcentageEcart) {
+    	 if (pourcentageEcart >= 200) return NiveauSeverite.CRITIQUE;
+         else if (pourcentageEcart >= 100) return NiveauSeverite.ELEVE;
+         else if (pourcentageEcart >= 75) return NiveauSeverite.MODERE;
         return NiveauSeverite.FAIBLE;
     }
 }

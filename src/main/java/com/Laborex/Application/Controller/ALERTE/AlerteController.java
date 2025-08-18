@@ -18,10 +18,14 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.Laborex.Application.KPI.DTO.CA.CaParClientDTO;
 import com.Laborex.Application.Model.Alerte.Alerte;
+import com.Laborex.Application.Model.Alerte.AlerteDTO;
 import com.Laborex.Application.Model.Alerte.TypeAlerte;
 import com.Laborex.Application.Service.ALERTE.AlerteSchedulerService;
 import com.Laborex.Application.Service.ALERTE.AlerteService;
+import com.Laborex.Application.Service.ALERTE.CalculAlerteService;
+
 
 @RestController
 @RequestMapping("/api/alertes")
@@ -30,9 +34,29 @@ public class AlerteController {
   
     @Autowired
     private AlerteService alerteService;
+    @Autowired
+    private CalculAlerteService calculAlerte;;
     
     @Autowired
     private AlerteSchedulerService schedulerService;
+    
+    //STOCK CRITIQUE
+    @GetMapping("/critiques")
+    public ResponseEntity<List<AlerteDTO>> getStockCritique() {
+        return ResponseEntity.ok(calculAlerte.detecterStockCritique());
+    }
+  //CLIENTS INACTIFS
+    @GetMapping("/clientsInactifs")
+    public ResponseEntity<List<AlerteDTO>> getClientsInactifs() {
+        return ResponseEntity.ok(calculAlerte.detecterClientsInactifs());
+    }
+  //ANOMALIES DES VENTES
+    @GetMapping("/anomalies")
+    public ResponseEntity<List<AlerteDTO>> getVentesAnomalies() {
+        return ResponseEntity.ok(calculAlerte.detecterAnomaliesVentes());
+    }
+    
+    
     
     /**
      * Récupère toutes les alertes actives

@@ -6,6 +6,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -14,8 +17,15 @@ import org.springframework.stereotype.Service;
 import com.Laborex.Application.Model.Alerte.Alerte;
 import com.Laborex.Application.Service.ALERTE.Configuration.AlerteConfiguration;
 
+import jakarta.annotation.PostConstruct;
+
 @Service
 public class AlerteSchedulerService {
+	
+	private static final Logger log = LoggerFactory.getLogger(StockCritiqueService.class);
+
+	
+
     
     
     @Autowired
@@ -33,6 +43,23 @@ public class AlerteSchedulerService {
     
     @Autowired
     private AlerteConfiguration alerteConfig;
+   /* 
+    @PostConstruct
+    public void lancementInitial() {
+        log.info("=== DÉMARRAGE DE L'APPLICATION : vérification immédiate des alertes ===");
+
+        try {
+            if (alerteConfig.isActiverNotifications()) {
+                log.info("Détection initiale des stocks critiques au démarrage...");
+                stockCritiqueService.detecterStocksCritiques();
+                log.info("Détection initiale terminée ✅");
+            } else {
+                log.warn("Notifications automatiques désactivées, rien exécuté au démarrage");
+            }
+        } catch (Exception e) {
+            log.error("Erreur lors de la détection initiale au démarrage", e);
+        }
+    }*/
     
     /**
      * Exécute toutes les vérifications d'alertes

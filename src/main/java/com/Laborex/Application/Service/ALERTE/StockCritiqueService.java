@@ -8,9 +8,11 @@ import org.springframework.stereotype.Service;
 import com.Laborex.Application.Dao.DuckDBConnection;
 import com.Laborex.Application.Model.Alerte.NiveauSeverite;
 import com.Laborex.Application.Model.Alerte.TypeAlerte;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 @Service
 public class StockCritiqueService {
+	private static final Logger log = LoggerFactory.getLogger(StockCritiqueService.class);
 
     @Autowired
     private AlerteService alerteService;
@@ -22,7 +24,7 @@ public class StockCritiqueService {
      * Détecte les articles avec un stock critique
      */
     public void detecterStocksCritiques() {
-        System.out.println("Début de la détection des stocks critiques");
+        log.info("Début de la détection des stocks critiques");
         
         try {
             // Requête pour récupérer tous les stocks actuels
@@ -57,6 +59,7 @@ public class StockCritiqueService {
                             "Réapprovisionnement urgent recommandé.",
                             libelle, quantiteActuelle, seuilCritique
                         );
+                        log.warn("Stock faible détecté...");
                         
                         alerteService.creerOuMettreAJourAlerte(
                             TypeAlerte.STOCK_CRITIQUE,
@@ -70,10 +73,10 @@ public class StockCritiqueService {
                 }
             }
             
-            System.out.println("Détection des stocks critiques terminée");
+            log.info("Détection des stocks critiques terminée");
             
         } catch (Exception e) {
-             System.err.println("Erreur lors de la détection des stocks critiques" + e);
+             log.warn("Erreur lors de la détection des stocks critiques" + e);
         }
     }
 }

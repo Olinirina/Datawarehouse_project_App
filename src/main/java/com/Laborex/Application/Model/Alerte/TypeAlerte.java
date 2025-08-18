@@ -2,7 +2,6 @@ package com.Laborex.Application.Model.Alerte;
 
 public enum TypeAlerte {
 	STOCK_CRITIQUE("Stock Critique"),
-    COMMANDE_BLOQUEE("Commande Bloquée"),
     CLIENT_INACTIF("Client Inactif"),
     ANOMALIE_VENTE("Anomalie de Vente");
     
